@@ -1,3 +1,4 @@
+
 name: Build
 
 on:
@@ -27,6 +28,7 @@ jobs:
       version_name: ${{ steps.version.outputs.name }}
       version_code: ${{ steps.version.outputs.code }}
       signed: ${{ steps.keystore.outputs.signed }}
+
     steps:
       - uses: actions/checkout@v7
 
@@ -63,30 +65,57 @@ jobs:
           echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Build debug and release
+      - name: Build debug, release and TV debug
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:assembleTvDebug --stacktrace
+        run: |
+          ./gradlew :app:assembleDebug :app:assembleRelease :app:assembleTvDebug --stacktrace
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
 
       - name: Collect APKs
         run: |
+          set -e
           mkdir -p dist
           base="CustomAnimator-M3-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}"
-          cp app/build/outputs/apk/debug/app-debug.apk "dist/$base-debug.apk"
-find app/build/outputs/apk -type f -name '*.apk' -print
-          release=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+
+          find app/build/outputs/apk -type f -name '*.apk' -print
+
+          mobile_debug="app/build/outputs/apk/debug/app-debug.apk"
+          tv_debug="app/build/outputs/apk/tv/debug/app-tv-debug.apk"
+
+          if [ ! -f "$mobile_debug" ]; then
+            echo "Mobile debug APK not found"
+            exit 1
+          fi
+
+          if [ ! -f "$tv_debug" ]; then
+            echo "TV debug APK not found. Available APKs:"
+            find app/build/outputs/apk -type f -name '*.apk' -print
+            exit 1
+          fi
+
+          cp "$mobile_debug" "dist/$base-debug.apk"
+          cp "$tv_debug" "dist/$base-tv-debug.apk"
+
+          release=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)
+
+          if [ -z "$release" ]; then
+            echo "Release APK not found"
+            exit 1
+          fi
+
           if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
             cp "$release" "dist/$base.apk"
           else
             cp "$release" "dist/$base-unsigned.apk"
           fi
+
           (cd dist && sha256sum *.apk > SHA256SUMS.txt)
-          ls -l dist
+          ls -lh dist
 
       - name: Remove keystore
         if: always()
@@ -105,6 +134,7 @@ find app/build/outputs/apk -type f -name '*.apk' -print
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/download-artifact@v8
         with:
