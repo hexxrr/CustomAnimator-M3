@@ -126,28 +126,3 @@ jobs:
           name: CustomAnimator-M3-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
           path: dist/
           if-no-files-found: error
-
-  release:
-    name: Publish release
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.outputs.signed == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: CustomAnimator-M3-${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.version_code }}
-          path: dist
-
-      - uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.version_code }}
-          target_commitish: ${{ github.sha }}
-          name: Custom Animator M3 ${{ needs.build.outputs.version_name }} (build ${{ needs.build.outputs.version_code }})
-          generate_release_notes: true
-          make_latest: true
-          files: |
-            dist/*.apk
-            dist/SHA256SUMS.txt
