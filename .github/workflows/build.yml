@@ -68,7 +68,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleDebug :app:assembleRelease --stacktrace
+        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:assembleTvDebug --stacktrace
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
@@ -78,6 +78,7 @@ jobs:
           mkdir -p dist
           base="CustomAnimator-M3-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}"
           cp app/build/outputs/apk/debug/app-debug.apk "dist/$base-debug.apk"
+find app/build/outputs/apk -type f -name '*.apk' -print
           release=$(ls app/build/outputs/apk/release/*.apk | head -n1)
           if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
             cp "$release" "dist/$base.apk"
