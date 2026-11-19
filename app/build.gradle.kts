@@ -25,6 +25,15 @@ android {
         version = release(37)
     }
 
+    flavorDimensions += "device"
+
+    productFlavors {
+        create("tv") {
+            dimension = "device"
+            applicationIdSuffix = ".tv"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.riyadmondol2006.customanimator"
         minSdk = 24
