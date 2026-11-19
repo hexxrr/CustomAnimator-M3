@@ -31,6 +31,11 @@ android {
         create("tv") {
             dimension = "device"
             applicationIdSuffix = ".tv"
+            // The target OnePlus TV reports a 32-bit ARM userspace.
+            // Keep the TV APK lean and avoid shipping unsupported native ABIs.
+            ndk {
+                abiFilters += setOf("armeabi-v7a")
+            }
         }
     }
 
